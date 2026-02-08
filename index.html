@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex Completa - 1025 Pokémon</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=DM+Sans:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --tier-s: #ff4757;
+            --tier-a: #ffa502;
+            --tier-b: #ffd700;
+            --tier-c: #7bed9f;
+            --tier-d: #70a1ff;
+            --tier-e: #a4b0be;
+            --tier-f: #747d8c;
+            --bg-dark: #0a0e27;
+            --bg-card: #16213e;
+            --bg-modal: #1a1f3a;
+            --text-primary: #eef5ff;
+            --text-secondary: #95a5bb;
+            --accent: #ff6b9d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: #0a0e27;
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(255, 107, 157, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(112, 161, 255, 0.15) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        #root {
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            padding: 2.5rem 2rem 1.5rem;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .header h1 {
+            font-family: 'Bungee', cursive;
+            font-size: clamp(1.8rem, 6vw, 3.5rem);
+            background: linear-gradient(135deg, #ff6b9d 0%, #ffa502 30%, #ffd700 60%, #7bed9f 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -2px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            max-width: 1600px;
+            margin: 1.5rem auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 280px;
+            position: relative;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.9rem 1.5rem 0.9rem 3rem;
+            background: var(--bg-card);
+            border: 2px solid rgba(255, 107, 157, 0.2);
+            border-radius: 14px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(255, 107, 157, 0.15);
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.7rem 1.2rem;
+            background: var(--bg-card);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'DM Sans', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .stats-info {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .pokemon-grid {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .pokemon-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+        }
+
+        .pokemon-card:hover {
+            transform: translateY(-8px) scale(1.05);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+
+        .card-image-wrapper {
+            position: relative;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+        }
+
+        .pokemon-image {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            transition: transform 0.3s ease;
+        }
+
+        .pokemon-card:hover .pokemon-image {
+            transform: scale(1.15);
+        }
+
+        .pokemon-number {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.3rem 0.6rem;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tier-badge-small {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-family: 'Bungee', cursive;
+            padding: 0.3rem 0.7rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .tier-S { background: var(--tier-s); color: white; }
+        .tier-A { background: var(--tier-a); color: white; }
+        .tier-B { background: var(--tier-b); color: #1a1a2e; }
+        .tier-C { background: var(--tier-c); color: #1a1a2e; }
+        .tier-D { background: var(--tier-d); color: white; }
+        .tier-E { background: var(--tier-e); color: white; }
+        .tier-F { background: var(--tier-f); color: white; }
+
+        .card-info {
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .pokemon-name {
+            font-family: 'Bungee', cursive;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            text-transform: capitalize;
+        }
+
+        .pokemon-types-small {
+            display: flex;
+            gap: 0.3rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .type-badge-small {
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: white;
+        }
+
+        /* Type colors */
+        .type-fire { background: linear-gradient(135deg, #ff4757, #ff6348); }
+        .type-water { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .type-grass { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .type-electric { background: linear-gradient(135deg, #f1c40f, #f39c12); }
+        .type-psychic { background: linear-gradient(135deg, #e056fd, #c44569); }
+        .type-normal { background: linear-gradient(135deg, #a4b0be, #747d8c); }
+        .type-fighting { background: linear-gradient(135deg, #c23616, #e84118); }
+        .type-poison { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+        .type-ground { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .type-flying { background: linear-gradient(135deg, #74b9ff, #0984e3); }
+        .type-bug { background: linear-gradient(135deg, #badc58, #6ab04c); }
+        .type-rock { background: linear-gradient(135deg, #95afc0, #535c68); }
+        .type-ghost { background: linear-gradient(135deg, #574b90, #303952); }
+        .type-dragon { background: linear-gradient(135deg, #5f27cd, #341f97); }
+        .type-dark { background: linear-gradient(135deg, #2c3e50, #34495e); }
+        .type-steel { background: linear-gradient(135deg, #95afc0, #7f8fa6); }
+        .type-fairy { background: linear-gradient(135deg, #fda7df, #f368e0); }
+        .type-ice { background: linear-gradient(135deg, #48dbfb, #0abde3); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: var(--bg-modal);
+            border-radius: 24px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid rgba(255, 107, 157, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            background: var(--accent);
+            transform: rotate(90deg);
+        }
+
+        .modal-pokemon-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .modal-pokemon-image {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
+        }
+
+        .modal-pokemon-info h2 {
+            font-family: 'Bungee', cursive;
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-transform: capitalize;
+        }
+
+        .modal-pokemon-number {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .modal-pokemon-types {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .type-badge-large {
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: white;
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .evolution-section h3 {
+            font-family: 'Bungee', cursive;
+            font-size: 1.3rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .evolution-chain {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            padding: 2rem 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+        }
+
+        .evolution-item {
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .evolution-item:hover {
+            transform: scale(1.05);
+        }
+
+        .evolution-image {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            margin-bottom: 0.5rem;
+        }
+
+        .evolution-name {
+            font-family: 'Bungee', cursive;
+            font-size: 0.9rem;
+            text-transform: capitalize;
+            margin-bottom: 0.3rem;
+        }
+
+        .evolution-number {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .evolution-arrow {
+            font-size: 2rem;
+            color: var(--accent);
+            margin: 0 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 107, 157, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), #ffa502);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            grid-column: 1 / -1;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(10, 14, 39, 0.5);
+            border-radius: 10px;
+            margin: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #ff6b9d, #ffa502);
+            border-radius: 10px;
+            border: 2px solid rgba(10, 14, 39, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #ff4757, #ff6348);
+            border-color: rgba(255, 107, 157, 0.3);
+            box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb:active {
+            background: linear-gradient(135deg, #e84393, #fd79a8);
+        }
+
+        /* Firefox scrollbar */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #ff6b9d rgba(10, 14, 39, 0.5);
+        }
+
+        /* Modal scrollbar específico */
+        .modal-content::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-track {
+            background: rgba(22, 33, 62, 0.3);
+            border-radius: 10px;
+        }
+
+        .modal-content::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #ff6b9d, #ffa502);
+            border-radius: 10px;
+            border: 2px solid rgba(22, 33, 62, 0.5);
+        }
+
+        .modal-content::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #ff4757, #ff6348);
+            box-shadow: 0 0 15px rgba(255, 107, 157, 0.6);
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        @media (max-width: 768px) {
+            .pokemon-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 1rem;
+                padding: 1rem;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+
+            .modal-pokemon-header {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .evolution-chain {
+                flex-direction: column;
+            }
+
+            .evolution-arrow {
+                transform: rotate(90deg);
+            }
+
+            /* Scrollbar más delgado en móvil */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Tier data for competitive ranking
+        const tierData = {
+            888: 'S', 898: 'S', 645: 'S', 382: 'S', 383: 'S', 727: 'S', 987: 'S', 1004: 'S',
+            892: 'A', 887: 'A', 812: 'A', 641: 'A', 445: 'A', 598: 'A', 591: 'A', 485: 'A', 
+            748: 'A', 36: 'A', 681: 'A', 658: 'A', 472: 'A', 815: 'A', 889: 'A', 894: 'A',
+            145: 'B', 479: 'B', 468: 'B', 130: 'B', 778: 'B', 637: 'B', 530: 'B', 248: 'B',
+            785: 'B', 788: 'B', 257: 'B', 462: 'B', 700: 'B', 260: 'B', 38: 'B', 80: 'B',
+            465: 'B', 279: 'B', 823: 'B', 861: 'B', 245: 'B', 243: 'B', 381: 'B', 380: 'B',
+            635: 'B', 384: 'S', 483: 'S', 484: 'S', 487: 'A', 150: 'S', 249: 'A', 250: 'A',
+            890: 'S', 644: 'S', 643: 'S', 897: 'S',
+            882: 'C', 3: 'C', 6: 'C', 9: 'C', 94: 'C', 65: 'C', 149: 'C', 376: 'C', 373: 'C',
+            448: 'C', 212: 'C', 244: 'C', 706: 'C', 784: 'C', 196: 'C', 880: 'C',
+            131: 'D', 143: 'D', 68: 'D', 59: 'D', 135: 'D', 134: 'D', 136: 'D', 202: 'D',
+            289: 'D', 486: 'D', 881: 'D', 875: 'D',
+            101: 'E', 12: 'E', 15: 'E', 18: 'E', 292: 'E', 213: 'E', 235: 'E', 25: 'E', 883: 'E',
+            206: 'F', 201: 'F', 129: 'F', 225: 'F', 370: 'F', 789: 'F', 349: 'F', 872: 'F'
+        };
+
+        const PokeApp = () => {
+            const [pokemon, setPokemon] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [selectedType, setSelectedType] = useState(null);
+            const [selectedTier, setSelectedTier] = useState(null);
+            const [selectedPokemon, setSelectedPokemon] = useState(null);
+            const [evolutionData, setEvolutionData] = useState(null);
+            const [loadingEvolution, setLoadingEvolution] = useState(false);
+
+            useEffect(() => {
+                const fetchAllPokemon = async () => {
+                    try {
+                        setLoading(true);
+                        const response = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+                        const data = await response.json();
+                        
+                        const pokemonDetails = await Promise.all(
+                            data.results.map(async (poke, index) => {
+                                const id = index + 1;
+                                const details = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(r => r.json());
+                                const tier = tierData[id] || (id <= 151 ? 'C' : (id <= 493 ? 'D' : 'E'));
+                                
+                                return {
+                                    id,
+                                    name: poke.name,
+                                    image: details.sprites.other['official-artwork'].front_default || 
+                                           details.sprites.front_default,
+                                    types: details.types.map(t => t.type.name),
+                                    tier,
+                                    stats: {
+                                        hp: details.stats[0].base_stat,
+                                        attack: details.stats[1].base_stat,
+                                        defense: details.stats[2].base_stat,
+                                        spAttack: details.stats[3].base_stat,
+                                        spDefense: details.stats[4].base_stat,
+                                        speed: details.stats[5].base_stat
+                                    },
+                                    speciesUrl: details.species.url
+                                };
+                            })
+                        );
+                        
+                        setPokemon(pokemonDetails);
+                        setLoading(false);
+                    } catch (error) {
+                        console.error('Error fetching Pokemon:', error);
+                        setLoading(false);
+                    }
+                };
+
+                fetchAllPokemon();
+            }, []);
+
+            const fetchEvolutionChain = async (speciesUrl) => {
+                try {
+                    setLoadingEvolution(true);
+                    const speciesData = await fetch(speciesUrl).then(r => r.json());
+                    const evolutionData = await fetch(speciesData.evolution_chain.url).then(r => r.json());
+                    
+                    const parseEvolutionChain = (chain) => {
+                        const evolutions = [];
+                        let current = chain;
+                        
+                        while (current) {
+                            const id = parseInt(current.species.url.split('/').slice(-2, -1)[0]);
+                            evolutions.push({
+                                id,
+                                name: current.species.name,
+                                image: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
+                            });
+                            current = current.evolves_to[0];
+                        }
+                        
+                        return evolutions;
+                    };
+                    
+                    const chain = parseEvolutionChain(evolutionData.chain);
+                    setEvolutionData(chain);
+                    setLoadingEvolution(false);
+                } catch (error) {
+                    console.error('Error fetching evolution:', error);
+                    setLoadingEvolution(false);
+                }
+            };
+
+            const handlePokemonClick = (poke) => {
+                setSelectedPokemon(poke);
+                setEvolutionData(null);
+                fetchEvolutionChain(poke.speciesUrl);
+            };
+
+            const filteredPokemon = useMemo(() => {
+                return pokemon.filter(poke => {
+                    const matchesSearch = poke.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        poke.id.toString().includes(searchTerm);
+                    const matchesType = !selectedType || poke.types.includes(selectedType);
+                    const matchesTier = !selectedTier || poke.tier === selectedTier;
+                    return matchesSearch && matchesType && matchesTier;
+                });
+            }, [pokemon, searchTerm, selectedType, selectedTier]);
+
+            const types = ['fire', 'water', 'grass', 'electric', 'psychic', 'normal', 'fighting', 
+                          'poison', 'ground', 'flying', 'bug', 'rock', 'ghost', 'dragon', 
+                          'dark', 'steel', 'fairy', 'ice'];
+
+            if (loading) {
+                return (
+                    <div className="loading">
+                        <div className="loading-spinner"></div>
+                        <div>Cargando Pokédex Completa...</div>
+                        <div style={{fontSize: '0.9rem', marginTop: '1rem'}}>
+                            Obteniendo datos de 1025 Pokémon
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <div className="header">
+                        <h1>POKÉDEX COMPLETA</h1>
+                        <p>1025 Pokémon • Todas las Generaciones</p>
+                    </div>
+
+                    <div className="controls">
+                        <div className="search-box">
+                            <span className="search-icon">🔍</span>
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre o número..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        
+                        <div className="filter-group">
+                            <button
+                                className={`filter-btn ${!selectedTier ? 'active' : ''}`}
+                                onClick={() => setSelectedTier(null)}
+                            >
+                                Todos
+                            </button>
+                            {['S', 'A', 'B', 'C', 'D', 'E', 'F'].map(tier => (
+                                <button
+                                    key={tier}
+                                    className={`filter-btn ${selectedTier === tier ? 'active' : ''}`}
+                                    onClick={() => setSelectedTier(tier)}
+                                >
+                                    Tier {tier}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="stats-info">
+                            <span>📊 Mostrando: {filteredPokemon.length}</span>
+                            <span>🎯 Total: {pokemon.length}</span>
+                        </div>
+                    </div>
+
+                    <div className="pokemon-grid">
+                        {filteredPokemon.length === 0 ? (
+                            <div className="no-results">
+                                No se encontraron Pokémon 😢
+                            </div>
+                        ) : (
+                            filteredPokemon.map(poke => (
+                                <div 
+                                    key={poke.id} 
+                                    className="pokemon-card"
+                                    onClick={() => handlePokemonClick(poke)}
+                                >
+                                    <div className="card-image-wrapper">
+                                        <span className="pokemon-number">#{poke.id.toString().padStart(4, '0')}</span>
+                                        <span className={`tier-badge-small tier-${poke.tier}`}>{poke.tier}</span>
+                                        <img 
+                                            src={poke.image} 
+                                            alt={poke.name}
+                                            className="pokemon-image"
+                                            loading="lazy"
+                                        />
+                                    </div>
+                                    <div className="card-info">
+                                        <div className="pokemon-name">{poke.name}</div>
+                                        <div className="pokemon-types-small">
+                                            {poke.types.map(type => (
+                                                <span key={type} className={`type-badge-small type-${type}`}>
+                                                    {type}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    {selectedPokemon && (
+                        <div className="modal-overlay" onClick={() => setSelectedPokemon(null)}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <button className="close-btn" onClick={() => setSelectedPokemon(null)}>
+                                        ✕
+                                    </button>
+                                    <div className="modal-pokemon-header">
+                                        <img 
+                                            src={selectedPokemon.image} 
+                                            alt={selectedPokemon.name}
+                                            className="modal-pokemon-image"
+                                        />
+                                        <div className="modal-pokemon-info">
+                                            <h2>{selectedPokemon.name}</h2>
+                                            <div className="modal-pokemon-number">
+                                                #{selectedPokemon.id.toString().padStart(4, '0')}
+                                            </div>
+                                            <div className="modal-pokemon-types">
+                                                {selectedPokemon.types.map(type => (
+                                                    <span key={type} className={`type-badge-large type-${type}`}>
+                                                        {type}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                            <span className={`tier-badge-small tier-${selectedPokemon.tier}`}>
+                                                TIER {selectedPokemon.tier}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="modal-body">
+                                    <div className="stats-grid">
+                                        <div className="stat-item">
+                                            <div className="stat-label">HP</div>
+                                            <div className="stat-value">{selectedPokemon.stats.hp}</div>
+                                            <div className="stat-bar">
+                                                <div className="stat-bar-fill" style={{width: `${(selectedPokemon.stats.hp / 255) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Ataque</div>
+                                            <div className="stat-value">{selectedPokemon.stats.attack}</div>
+                                            <div className="stat-bar">
+                                                <div className="stat-bar-fill" style={{width: `${(selectedPokemon.stats.attack / 255) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Defensa</div>
+                                            <div className="stat-value">{selectedPokemon.stats.defense}</div>
+                                            <div className="stat-bar">
+                                                <div className="stat-bar-fill" style={{width: `${(selectedPokemon.stats.defense / 255) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">At. Esp.</div>
+                                            <div className="stat-value">{selectedPokemon.stats.spAttack}</div>
+                                            <div className="stat-bar">
+                                                <div className="stat-bar-fill" style={{width: `${(selectedPokemon.stats.spAttack / 255) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Def. Esp.</div>
+                                            <div className="stat-value">{selectedPokemon.stats.spDefense}</div>
+                                            <div className="stat-bar">
+                                                <div className="stat-bar-fill" style={{width: `${(selectedPokemon.stats.spDefense / 255) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                        <div className="stat-item">
+                                            <div className="stat-label">Velocidad</div>
+                                            <div className="stat-value">{selectedPokemon.stats.speed}</div>
+                                            <div className="stat-bar">
+                                                <div className="stat-bar-fill" style={{width: `${(selectedPokemon.stats.speed / 255) * 100}%`}}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="evolution-section">
+                                        <h3>🔄 Cadena Evolutiva</h3>
+                                        {loadingEvolution ? (
+                                            <div className="loading">
+                                                <div className="loading-spinner"></div>
+                                                <div>Cargando evoluciones...</div>
+                                            </div>
+                                        ) : evolutionData && evolutionData.length > 0 ? (
+                                            <div className="evolution-chain">
+                                                {evolutionData.map((evo, index) => (
+                                                    <React.Fragment key={evo.id}>
+                                                        <div className="evolution-item">
+                                                            <img 
+                                                                src={evo.image} 
+                                                                alt={evo.name}
+                                                                className="evolution-image"
+                                                            />
+                                                            <div className="evolution-name">{evo.name}</div>
+                                                            <div className="evolution-number">
+                                                                #{evo.id.toString().padStart(4, '0')}
+                                                            </div>
+                                                        </div>
+                                                        {index < evolutionData.length - 1 && (
+                                                            <div className="evolution-arrow">→</div>
+                                                        )}
+                                                    </React.Fragment>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div style={{textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem'}}>
+                                                Este Pokémon no tiene evoluciones
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<PokeApp />, document.getElementById('root'));
+    </script>
+</body>
+</html>
